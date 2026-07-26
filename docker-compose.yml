@@ -9,6 +9,10 @@ services:
     container_name: jupyter-lab
     environment:
       MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI}
+      PREFECT_API_URL: ${PREFECT_API_URL}
+      MINIO_ROOT_USER: ${MLFLOW_MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MLFLOW_MINIO_ROOT_PASSWORD}
+      MINIO_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL}
     ports:
       - "127.0.0.1:8888:8888"
     volumes:
@@ -114,3 +118,85 @@ services:
       interval: 10s
       timeout: 5s
       retries: 30
+
+### PREFECT ###
+
+  prefect-postgres:
+    image: postgres:15.17-bookworm
+    container_name: prefect-postgres
+    environment:
+      POSTGRES_USER: ${PREFECT_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${PREFECT_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${PREFECT_POSTGRES_DB}
+    volumes:
+      - ./docker/prefect/postgres/data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PREFECT_POSTGRES_USER} -d ${PREFECT_POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  prefect-redis:
+    image: redis:8.2.7-bookworm
+    container_name: prefect-redis
+    volumes:
+      - ./docker/prefect/redis/data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  prefect-server:
+    image: prefecthq/prefect:3.7.8-python3.14
+    container_name: prefect-server
+    depends_on:
+      prefect-postgres:
+        condition: service_healthy
+      prefect-redis:
+        condition: service_healthy
+    environment:
+      PREFECT_API_DATABASE_CONNECTION_URL: ${PREFECT_API_DATABASE_CONNECTION_URL}
+      PREFECT_SERVER_API_HOST: ${PREFECT_SERVER_API_HOST}
+      PREFECT_SERVER_API_PORT: ${PREFECT_SERVER_API_PORT}
+      PREFECT_MESSAGING_BROKER: ${PREFECT_MESSAGING_BROKER}
+      PREFECT_MESSAGING_CACHE: ${PREFECT_MESSAGING_CACHE}
+      PREFECT_REDIS_MESSAGING_HOST: ${PREFECT_REDIS_HOST}
+      PREFECT_REDIS_MESSAGING_PORT: ${PREFECT_REDIS_PORT}
+      PREFECT_REDIS_MESSAGING_DB: ${PREFECT_REDIS_DB}
+      PREFECT_SERVER_ANALYTICS_ENABLED: ${PREFECT_SERVER_ANALYTICS_ENABLED}
+    command: prefect server start --no-services
+    ports:
+      - "127.0.0.1:${PREFECT_SERVER_API_PORT}:${PREFECT_SERVER_API_PORT}"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:${PREFECT_SERVER_API_PORT}/api/health', timeout=1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  prefect-services:
+    image: prefecthq/prefect:3.7.8-python3.14
+    container_name: prefect-services
+    depends_on:
+      prefect-server:
+        condition: service_healthy
+    environment:
+      PREFECT_API_DATABASE_CONNECTION_URL: ${PREFECT_API_DATABASE_CONNECTION_URL}
+      PREFECT_MESSAGING_BROKER: ${PREFECT_MESSAGING_BROKER}
+      PREFECT_MESSAGING_CACHE: ${PREFECT_MESSAGING_CACHE}
+      PREFECT_REDIS_MESSAGING_HOST: ${PREFECT_REDIS_HOST}
+      PREFECT_REDIS_MESSAGING_PORT: ${PREFECT_REDIS_PORT}
+      PREFECT_REDIS_MESSAGING_DB: ${PREFECT_REDIS_DB}
+    command: prefect server services start
+
+  # prefect-worker:
+  #   image: prefecthq/prefect:3.7.8-python3.14
+  #   container_name: prefect-worker
+  #   depends_on:
+  #     prefect-server:
+  #       condition: service_healthy
+  #   environment:
+  #     PREFECT_API_URL: ${PREFECT_API_URL}
+  #   command: prefect worker start --pool local-pool --type process
+  #   restart: on-failure
