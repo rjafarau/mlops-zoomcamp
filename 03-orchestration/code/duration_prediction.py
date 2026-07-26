@@ -8,6 +8,7 @@ import pickle
 import mlflow
 import pandas as pd
 import xgboost as xgb
+from prefect import flow, task
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.metrics import root_mean_squared_error
 
@@ -17,6 +18,7 @@ models_folder = pathlib.Path("models")
 models_folder.mkdir(exist_ok=True)
 
 
+@task(retries=3, retry_delay_seconds=2)
 def read_dataframe(year, month):
     url = f"https://d37ci6vzurychx.cloudfront.net/trip-data/green_tripdata_{year}-{month:02d}.parquet"
     df = pd.read_parquet(url)
@@ -34,6 +36,7 @@ def read_dataframe(year, month):
     return df
 
 
+@task
 def create_X(df, dv=None):
     categorical = ["PU_DO"]
     numerical = ["trip_distance"]
@@ -48,6 +51,7 @@ def create_X(df, dv=None):
     return X, dv
 
 
+@task(log_prints=True)
 def train_model(X_train, y_train, X_val, y_val, dv):
     mlflow.xgboost.autolog(disable=True)
     with mlflow.start_run() as run:
@@ -80,15 +84,18 @@ def train_model(X_train, y_train, X_val, y_val, dv):
         error = root_mean_squared_error(y_val, y_pred)
         mlflow.log_metric("error", error)
 
-        with open("models/preprocessor.pkl", "wb") as f_out:
-            pickle.dump(dv, f_out)
-        mlflow.log_artifact("models/preprocessor.pkl", artifact_path="preprocessor")
+        (models_folder / "preprocessor.pkl").write_bytes(pickle.dumps(dv))
+        mlflow.log_artifact(
+            local_path=models_folder / "preprocessor.pkl",
+            artifact_path="preprocessor",
+        )
 
         mlflow.xgboost.log_model(booster, name="models_mlflow")
 
         return run.info.run_id
 
 
+@flow
 def run(year, month):
     df_train = read_dataframe(year=year, month=month)
 
@@ -122,5 +129,4 @@ if __name__ == "__main__":
 
     run_id = run(year=args.year, month=args.month)
 
-    with open("run_id.txt", "w") as f:
-        f.write(run_id)
+    pathlib.Path("run_id.txt").write_text(run_id)
