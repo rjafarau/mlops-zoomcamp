@@ -69,7 +69,7 @@ services:
     restart: "no"
 
   mlflow:
-    image: ghcr.io/mlflow/mlflow:v3.12.0-full
+    image: ghcr.io/mlflow/mlflow:v3.14.0-full
     container_name: mlflow-server
     depends_on:
       postgres:
