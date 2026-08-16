@@ -200,3 +200,25 @@ services:
   #     PREFECT_API_URL: ${PREFECT_API_URL}
   #   command: prefect worker start --pool local-pool --type process
   #   restart: on-failure
+
+  ### MISC ###
+
+  # web-server-mlflow:
+  #   build:
+  #     context: ./04-deployment/web-service-mlflow
+  #   container_name: web-server-mlflow
+  #   depends_on:
+  #   #   mlflow-server:
+  #   #     condition: service_healthy
+  #     mlflow-minio:
+  #       condition: service_healthy
+  #   environment:
+  #     RUN_ID: 7e1c7ff453944da98f670500f11d3bc4
+  #     MODEL_ID: m-205aad2b19454838af2cfe5644624f7e
+  #     MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI}
+  #     MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL}
+  #     AWS_ACCESS_KEY_ID: ${MLFLOW_MINIO_ROOT_USER}
+  #     AWS_SECRET_ACCESS_KEY: ${MLFLOW_MINIO_ROOT_PASSWORD}
+  #   ports:
+  #     - "127.0.0.1:9696:9696"
+  #   restart: on-failure
