@@ -1,10 +1,6 @@
 # Base stage
 FROM python:3.14.3-slim-bookworm AS base
 
-# Set up common environment variables
-ENV HF_HOME="/app/hf_home"
-ENV SENTENCE_TRANSFORMERS_HOME="/app/st_home"
-
 # Build stage
 FROM base AS build
 
