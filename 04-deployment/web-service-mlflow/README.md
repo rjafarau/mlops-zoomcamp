@@ -14,7 +14,7 @@ mlflow server \
     --default-artifact-root=s3://mlflow-models-alexey/
 ```
 
-Downloading the artifact
+Downloading the artifact:
 
 ```bash
 export MLFLOW_TRACKING_URI="http://127.0.0.1:5000"
@@ -24,4 +24,12 @@ mlflow artifacts download \
     --run-id ${MODEL_RUN_ID} \
     --artifact-path model \
     --dst-path .
+```
+
+Test endpoint using `curl`:
+
+```bash
+curl -X POST http://localhost:9696/predict \
+     -H "Content-Type: application/json" \
+     -d '{"PULocationID": 10, "DOLocationID": 50, "trip_distance": 40}'
 ```

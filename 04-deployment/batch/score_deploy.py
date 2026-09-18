@@ -1,16 +1,21 @@
-from prefect.deployments import Deployment
-from prefect.orion.schemas.schedules import CronSchedule
-from score import ride_duration_prediction
+import pathlib
 
-deployment = Deployment.build_from_flow(
-    flow=ride_duration_prediction,
-    name="ride_duration_prediction",
-    parameters={
-        "taxi_type": "green",
-        "run_id": "e1efc53e9bd149078b0c12aeaa6365df",
-    },
-    schedule=CronSchedule(cron="0 3 2 * *"),
-    work_queue_name="ml",
-)
+from prefect import flow
 
-deployment.apply()
+
+if __name__ == "__main__":
+    (
+        flow.from_source(
+            source=pathlib.Path(__file__).parent,
+            entrypoint="score.py:run",
+        ).deploy(
+            name="scoring-batch-deploy",
+            work_pool_name="local-pool",
+            parameters={
+                "taxi_type": "green",
+                "year": 2021,
+                "month": 2,
+                "model_id": "m-205aad2b19454838af2cfe5644624f7e",
+            },
+        )
+    )

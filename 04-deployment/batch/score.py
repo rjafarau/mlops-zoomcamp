@@ -1,146 +1,142 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-import os
-import sys
-
+import argparse
+import pathlib
 import uuid
-import pickle
-
-from datetime import datetime
-
-import pandas as pd
 
 import mlflow
+import pandas as pd
 
-from prefect import task, flow, get_run_logger
-from prefect.context import get_run_context
-
-from dateutil.relativedelta import relativedelta
-
-from sklearn.feature_extraction import DictVectorizer
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error
-from sklearn.pipeline import make_pipeline
-
-
-def generate_uuids(n):
-    ride_ids = []
-    for i in range(n):
-        ride_ids.append(str(uuid.uuid4()))
-    return ride_ids
-
-
-def read_dataframe(filename: str):
-    df = pd.read_parquet(filename)
-
-    df['duration'] = df.lpep_dropoff_datetime - df.lpep_pickup_datetime
-    df.duration = df.duration.dt.total_seconds() / 60
-    df = df[(df.duration >= 1) & (df.duration <= 60)]
-    
-    df['ride_id'] = generate_uuids(len(df))
-
-    return df
-
-
-def prepare_dictionaries(df: pd.DataFrame):
-    categorical = ['PULocationID', 'DOLocationID']
-    df[categorical] = df[categorical].astype(str)
-    
-    df['PU_DO'] = df['PULocationID'] + '_' + df['DOLocationID']
-
-    categorical = ['PU_DO']
-    numerical = ['trip_distance']
-    dicts = df[categorical + numerical].to_dict(orient='records')
-    return dicts
-
-
-def load_model(run_id):
-    logged_model = f's3://mlflow-models-alexey/1/{run_id}/artifacts/model'
-    model = mlflow.pyfunc.load_model(logged_model)
-    return model
-
-
-def save_results(df, y_pred, run_id, output_file):
-    df_result = pd.DataFrame()
-    df_result['ride_id'] = df['ride_id']
-    df_result['lpep_pickup_datetime'] = df['lpep_pickup_datetime']
-    df_result['PULocationID'] = df['PULocationID']
-    df_result['DOLocationID'] = df['DOLocationID']
-    df_result['actual_duration'] = df['duration']
-    df_result['predicted_duration'] = y_pred
-    df_result['diff'] = df_result['actual_duration'] - df_result['predicted_duration']
-    df_result['model_version'] = run_id
-
-    df_result.to_parquet(output_file, index=False)
+from prefect import flow, get_run_logger, task
 
 
 @task
-def apply_model(input_file, run_id, output_file):
-    logger = get_run_logger()
+def get_paths(taxi_type, year, month, model_id):
+    input_file = (
+        "https://d37ci6vzurychx.cloudfront.net/trip-data/"
+        f"{taxi_type}_tripdata_{year:04d}-{month:02d}.parquet"
+    )
 
-    logger.info(f'reading the data from {input_file}...')
-    df = read_dataframe(input_file)
-    dicts = prepare_dictionaries(df)
-
-    logger.info(f'loading the model with RUN_ID={run_id}...')
-    model = load_model(run_id)
-
-    logger.info(f'applying the model...')
-    y_pred = model.predict(dicts)
-
-    logger.info(f'saving the result to {output_file}...')
-
-    save_results(df, y_pred, run_id, output_file)
-    return output_file
-
-
-def get_paths(run_date, taxi_type, run_id):
-    prev_month = run_date - relativedelta(months=1)
-    year = prev_month.year
-    month = prev_month.month 
-
-    input_file = f's3://nyc-tlc/trip data/{taxi_type}_tripdata_{year:04d}-{month:02d}.parquet'
-    output_file = f's3://nyc-duration-prediction-alexey/taxi_type={taxi_type}/year={year:04d}/month={month:02d}/{run_id}.parquet'
+    output_dir = (
+        pathlib.Path("output")
+        / f"taxi_type={taxi_type}"
+        / f"year={year:04d}"
+        / f"month={month:02d}"
+    )
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_file = output_dir / f"{model_id}.parquet"
 
     return input_file, output_file
 
 
+def generate_uuids(n: int):
+    return [str(uuid.uuid4()) for _ in range(n)]
+
+
+@task
+def read_dataframe(filename: str):
+    df = pd.read_parquet(filename)
+
+    df["duration"] = df["lpep_dropoff_datetime"] - df["lpep_pickup_datetime"]
+    df["duration"] = df["duration"].dt.total_seconds() / 60
+    df = df[(df["duration"] >= 1) & (df["duration"] <= 60)]
+
+    df["ride_id"] = generate_uuids(len(df))
+
+    categorical = ["PULocationID", "DOLocationID"]
+    df[categorical] = df[categorical].astype(str)
+
+    df["PU_DO"] = df["PULocationID"] + "_" + df["DOLocationID"]
+
+    return df
+
+
+@task
+def prepare_features(df: pd.DataFrame):
+    categorical = ["PU_DO"]
+    numerical = ["trip_distance"]
+    dicts = df[categorical + numerical].to_dict(orient="records")
+    return dicts
+
+
+@task
+def load_model(model_id: str):
+    # logged_model = f"runs:/{run_id}/model"
+    logged_model = f"models:/{model_id}"
+    # logged_model = f"mlflow-artifacts:/3/models/{model_id}/artifacts"
+    # logged_model = f"s3://mlflow/3/models/{model_id}/artifacts"
+    model = mlflow.pyfunc.load_model(logged_model)
+    return model
+
+
+@task
+def predict(model, features):
+    return model.predict(features)
+
+
+@task
+def save_results(df, y_pred, model_id, output_file):
+    df_result = df[
+        ["ride_id", "lpep_pickup_datetime", "PULocationID", "DOLocationID"]
+    ].copy()
+    df_result["actual_duration"] = df["duration"]
+    df_result["predicted_duration"] = y_pred
+    df_result["diff"] = df_result["actual_duration"] - df_result["predicted_duration"]
+    df_result["model_version"] = model_id
+
+    df_result.to_parquet(output_file, index=False)
+
+
 @flow
-def ride_duration_prediction(
-        taxi_type: str,
-        run_id: str,
-        run_date: datetime = None):
-    if run_date is None:
-        ctx = get_run_context()
-        run_date = ctx.flow_run.expected_start_time
-    
-    input_file, output_file = get_paths(run_date, taxi_type, run_id)
+def run(taxi_type: str, year: int, month: int, model_id: str):
+    logger = get_run_logger()
 
-    apply_model(
-        input_file=input_file,
-        run_id=run_id,
-        output_file=output_file
-    )
+    # logging.basicConfig(level=logging.INFO)
+    # logger = logging.getLogger()
 
-
-def run():
-    taxi_type = sys.argv[1] # 'green'
-    year = int(sys.argv[2]) # 2021
-    month = int(sys.argv[3]) # 3
-
-    run_id = sys.argv[4] # 'e1efc53e9bd149078b0c12aeaa6365df'
-
-    ride_duration_prediction(
+    logger.info("generating input/output paths...")
+    input_file, output_file = get_paths(
         taxi_type=taxi_type,
-        run_id=run_id,
-        run_date=datetime(year=year, month=month, day=1)
+        year=year,
+        month=month,
+        model_id=model_id,
     )
 
+    logger.info(f"reading the data from {input_file}...")
+    df = read_dataframe(input_file)
 
-if __name__ == '__main__':
-    run()
+    logger.info("preparing features...")
+    features = prepare_features(df)
+
+    logger.info(f"loading the model with model_id={model_id}...")
+    model = load_model(model_id)
+
+    logger.info("applying the model...")
+    y_pred = predict(model, features)
+
+    logger.info(f"saving the result to {output_file}...")
+    save_results(df, y_pred, model_id, output_file)
 
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Score batch of rides using model to predict taxi trip duration."
+    )
+    parser.add_argument(
+        "--taxi-type", type=str, required=True, help="Taxi type data to score"
+    )
+    parser.add_argument(
+        "--year", type=int, required=True, help="Year of the data to score"
+    )
+    parser.add_argument(
+        "--month", type=int, required=True, help="Month of the data to score"
+    )
+    parser.add_argument(
+        "--model-id", type=str, required=True, help="Model ID of the model to be used"
+    )
+    args = parser.parse_args()
 
-
+    run(
+        taxi_type=args.taxi_type,
+        year=args.year,
+        month=args.month,
+        model_id=args.model_id,
+    )

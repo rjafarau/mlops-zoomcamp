@@ -26,7 +26,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # Set up directories
 COPY src/ /app/src
-COPY bin/ /app/bin
 
 # Runtime stage
 FROM base AS runtime
