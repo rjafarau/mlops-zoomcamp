@@ -1,0 +1,23 @@
+[project]
+name = "batch-scoring"
+version = "0.0.1"
+description = "Batch scoring"
+requires-python = "==3.14.3"
+dependencies = [
+    "pandas==2.3.3",
+    "pyarrow==23.0.1",
+
+    "scikit-learn==1.8.0",
+
+    "mlflow==3.14.0",
+    "boto3==1.43.46",
+    "skops==0.14.0",
+
+    "prefect==3.7.8",
+    "prefect-aws==0.7.10"
+]
+
+[dependency-groups]
+dev = [
+    "requests==2.34.2"
+]
