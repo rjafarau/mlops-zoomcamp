@@ -6,6 +6,7 @@ import mlflow
 import pandas as pd
 
 from prefect import flow, get_run_logger, task
+from prefect_aws import S3Bucket
 
 
 @task
@@ -60,9 +61,9 @@ def prepare_features(df: pd.DataFrame):
 @task
 def load_model(model_id: str):
     # logged_model = f"runs:/{run_id}/model"
-    logged_model = f"models:/{model_id}"
+    # logged_model = f"models:/{model_id}"
     # logged_model = f"mlflow-artifacts:/3/models/{model_id}/artifacts"
-    # logged_model = f"s3://mlflow/3/models/{model_id}/artifacts"
+    logged_model = f"s3://mlflow/3/models/{model_id}/artifacts"
     model = mlflow.pyfunc.load_model(logged_model)
     return model
 
@@ -84,13 +85,16 @@ def save_results(df, y_pred, model_id, output_file):
 
     df_result.to_parquet(output_file, index=False)
 
+    s3_bucket_block = S3Bucket.load("s3-bucket-example")
+    s3_bucket_block.upload_from_path(
+        from_path=output_file,
+        to_path=output_file,
+    )
+
 
 @flow
 def run(taxi_type: str, year: int, month: int, model_id: str):
     logger = get_run_logger()
-
-    # logging.basicConfig(level=logging.INFO)
-    # logger = logging.getLogger()
 
     logger.info("generating input/output paths...")
     input_file, output_file = get_paths(
