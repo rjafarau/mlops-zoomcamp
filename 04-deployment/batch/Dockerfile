@@ -19,10 +19,12 @@ WORKDIR /app
 
 # Install project dependencies
 ARG UV_SYNC_OPTIONS="--locked --no-dev"
-RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync $UV_SYNC_OPTIONS
+# RUN --mount=type=cache,target=/root/.cache/uv \
+#     --mount=type=bind,source=uv.lock,target=uv.lock \
+#     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+#     uv sync $UV_SYNC_OPTIONS
+COPY uv.lock pyproject.toml /app/
+RUN uv sync $UV_SYNC_OPTIONS
 
 # Set up directories
 # COPY src/ /app/src
