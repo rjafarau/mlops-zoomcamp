@@ -39,5 +39,6 @@ if __name__ == "__main__":
                 "AWS_SECRET_ACCESS_KEY": creds.minio_root_password.get_secret_value(),
             },
             "networks": ["mlops-zoomcamp-network"],
+            "auto_remove": True,
         },
     )

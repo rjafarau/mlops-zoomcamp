@@ -60,3 +60,4 @@ deployments:
         AWS_SECRET_ACCESS_KEY: "{{ prefect.blocks.minio-credentials.my-minio-creds.minio_root_password }}"
       networks:
         - mlops-zoomcamp-network
+      auto_remove: true
