@@ -15,7 +15,7 @@ if __name__ == "__main__":
         ),
         entrypoint="04-deployment/batch/src/flows/score.py:run",
     ).deploy(
-        name="docker-deployment2",
+        name="docker-git-deployment",
         work_pool_name="docker-pool",
         image=DockerImage(
             name="my_image",

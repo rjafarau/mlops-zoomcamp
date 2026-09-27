@@ -14,7 +14,7 @@ if __name__ == "__main__":
         ),
         entrypoint="04-deployment/batch/src/flows/score.py:run",
     ).deploy(
-        name="docker-deployment",
+        name="custom-git-deployment",
         work_pool_name="docker-pool",
         parameters={
             "taxi_type": "green",
