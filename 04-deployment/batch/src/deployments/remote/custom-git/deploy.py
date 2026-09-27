@@ -10,7 +10,7 @@ if __name__ == "__main__":
     flow.from_source(
         source=GitRepository(
             url="https://github.com/rjafarau/mlops-zoomcamp.git",
-            branch="04-deployment-2",
+            branch="main",
         ),
         entrypoint="04-deployment/batch/src/flows/score.py:run",
     ).deploy(

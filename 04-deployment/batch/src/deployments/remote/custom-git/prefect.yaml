@@ -22,7 +22,7 @@ pull:
     directory: /app
 - prefect.deployments.steps.git_clone:
     repository: https://github.com/rjafarau/mlops-zoomcamp.git
-    branch: 04-deployment-2
+    branch: main
 
 
 # the deployments section allows you to provide configuration
