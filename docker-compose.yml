@@ -236,3 +236,7 @@ services:
   #     MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL}
   #     AWS_ACCESS_KEY_ID: ${MLFLOW_MINIO_ROOT_USER}
   #     AWS_SECRET_ACCESS_KEY: ${MLFLOW_MINIO_ROOT_PASSWORD}
+
+networks:
+  default:
+    name: mlops-zoomcamp-network
