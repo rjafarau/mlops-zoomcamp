@@ -239,4 +239,6 @@ services:
 
 networks:
   default:
-    name: mlops-zoomcamp-network
+    # name: mlops-zoomcamp-network
+    name: kind
+    external: true
