@@ -47,7 +47,7 @@ deployments:
       image: mlopszoomcamp:latest
       image_pull_policy: Never
       env:
-        MLFLOW_TRACKING_URI": "{{ $MLFLOW_TRACKING_URI }}"
+        MLFLOW_TRACKING_URI: "{{ $MLFLOW_TRACKING_URI }}"
         MLFLOW_S3_ENDPOINT_URL: "{{ $MLFLOW_S3_ENDPOINT_URL }}"
         AWS_ACCESS_KEY_ID: "{{ prefect.blocks.minio-credentials.my-minio-creds.minio_root_user }}"
         AWS_SECRET_ACCESS_KEY: "{{ prefect.blocks.minio-credentials.my-minio-creds.minio_root_password }}"
