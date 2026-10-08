@@ -1,0 +1,6 @@
+worker:
+  apiConfig: selfHostedServer
+  config:
+    workPool: k8s-pool
+  selfHostedServerApiConfig:
+    apiUrl: http://prefect-server:4200/api
