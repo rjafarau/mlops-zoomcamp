@@ -17,7 +17,7 @@ uv run --env-file 04-deployment/batch/src/deployments/remote/.env \
 # using CLI
 uv run --env-file 04-deployment/batch/src/deployments/remote/.env \
     prefect work-pool create \
-        --base-job-template 04-deployment/batch/src/deployments/remote/k8s/template.json \
+        --base-job-template 04-deployment/batch/src/deployments/remote/kubernetes/template.json \
         --type kubernetes \
         k8s-pool
 
@@ -28,7 +28,7 @@ uv run --env-file 04-deployment/batch/src/deployments/remote/.env \
 # https://docs.prefect.io/v3/how-to-guides/deployment_infra/kubernetes#deploy-a-worker-using-helm
 helm install prefect-worker prefect/prefect-worker \
     --namespace=prefect \
-    -f 04-deployment/batch/src/deployments/remote/k8s/values.yaml
+    -f 04-deployment/batch/src/deployments/remote/kubernetes/values.yaml
 
 # Create K8S secret
 # https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#create-a-secret-by-providing-credentials-on-the-command-line
