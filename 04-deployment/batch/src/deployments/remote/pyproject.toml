@@ -1,10 +1,10 @@
 [project]
-name = "remote-nvironment"
+name = "remote-environment"
 version = "0.0.1"
 description = "Remote environment"
 requires-python = "==3.14.3"
 dependencies = [
-    "prefect==3.7.8",
+    "prefect==3.8.8",
     "prefect-aws==0.7.10",
     "prefect-docker==0.7.3",
     "prefect-kubernetes==0.7.11"
