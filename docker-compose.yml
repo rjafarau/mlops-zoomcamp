@@ -19,6 +19,7 @@ services:
       - ./01-intro:/app/01-intro
       - ./02-experiment-tracking:/app/02-experiment-tracking
       - ./03-orchestration:/app/03-orchestration
+      - ./04-deployment:/app/04-deployment
     command: [
       "jupyter", "lab",
       "--ip", "0.0.0.0",
@@ -148,7 +149,7 @@ services:
       retries: 5
 
   prefect-server:
-    image: prefecthq/prefect:3.7.8-python3.14
+    image: prefecthq/prefect:3.8.8-python3.14
     container_name: prefect-server
     depends_on:
       prefect-postgres:
@@ -176,7 +177,7 @@ services:
       start_period: 60s
 
   prefect-services:
-    image: prefecthq/prefect:3.7.8-python3.14
+    image: prefecthq/prefect:3.8.8-python3.14
     container_name: prefect-services
     depends_on:
       prefect-server:
@@ -191,7 +192,7 @@ services:
     command: prefect server services start
 
   # prefect-worker:
-  #   image: prefecthq/prefect:3.7.8-python3.14
+  #   image: prefecthq/prefect:3.8.8-python3.14
   #   container_name: prefect-worker
   #   depends_on:
   #     prefect-server:
