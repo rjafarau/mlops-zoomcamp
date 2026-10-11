@@ -14,7 +14,7 @@ dependencies = [
     "seaborn==0.13.2",
     "matplotlib==3.10.8",
 
-    "prefect==3.7.8",
+    "prefect==3.8.8",
     "prefect-aws==0.7.10"
 ]
 
