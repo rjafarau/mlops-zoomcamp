@@ -4,7 +4,7 @@ import subprocess
 from prefect import flow
 from prefect.docker import DockerImage
 from prefect.runner.storage import GitRepository
-from prefect_aws import MinIOCredentials
+from prefect_aws import AwsCredentials
 
 
 def get_commit_hash() -> str:
@@ -16,7 +16,7 @@ def get_commit_hash() -> str:
 
 
 if __name__ == "__main__":
-    creds = MinIOCredentials.load("my-minio-creds")
+    creds = AwsCredentials.load("my-aws-creds")
     commit_hash = get_commit_hash()
 
     flow.from_source(
@@ -47,8 +47,9 @@ if __name__ == "__main__":
             "env": {
                 "MLFLOW_TRACKING_URI": os.environ["MLFLOW_TRACKING_URI"],
                 "MLFLOW_S3_ENDPOINT_URL": os.environ["MLFLOW_S3_ENDPOINT_URL"],
-                "AWS_ACCESS_KEY_ID": creds.minio_root_user,
-                "AWS_SECRET_ACCESS_KEY": creds.minio_root_password.get_secret_value(),
+                "AWS_ACCESS_KEY_ID": creds.aws_access_key_id,
+                "AWS_SECRET_ACCESS_KEY": creds.aws_secret_access_key.get_secret_value(),
+                "AWS_DEFAULT_REGION": creds.region_name,
             },
         },
     )

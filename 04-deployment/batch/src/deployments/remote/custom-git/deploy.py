@@ -2,10 +2,10 @@ import os
 
 from prefect import flow
 from prefect.runner.storage import GitRepository
-from prefect_aws import MinIOCredentials
+from prefect_aws import AwsCredentials
 
 if __name__ == "__main__":
-    creds = MinIOCredentials.load("my-minio-creds")
+    creds = AwsCredentials.load("my-aws-creds")
 
     flow.from_source(
         source=GitRepository(
@@ -29,8 +29,9 @@ if __name__ == "__main__":
             "env": {
                 "MLFLOW_TRACKING_URI": os.environ["MLFLOW_TRACKING_URI"],
                 "MLFLOW_S3_ENDPOINT_URL": os.environ["MLFLOW_S3_ENDPOINT_URL"],
-                "AWS_ACCESS_KEY_ID": creds.minio_root_user,
-                "AWS_SECRET_ACCESS_KEY": creds.minio_root_password.get_secret_value(),
+                "AWS_ACCESS_KEY_ID": creds.aws_access_key_id,
+                "AWS_SECRET_ACCESS_KEY": creds.aws_secret_access_key.get_secret_value(),
+                "AWS_DEFAULT_REGION": creds.region_name,
             },
             "networks": ["mlops-zoomcamp-network"],
             "auto_remove": True,

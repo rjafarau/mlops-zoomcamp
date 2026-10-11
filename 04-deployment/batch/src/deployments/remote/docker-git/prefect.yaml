@@ -56,8 +56,9 @@ deployments:
       env:
         MLFLOW_TRACKING_URI: "{{ $MLFLOW_TRACKING_URI }}"
         MLFLOW_S3_ENDPOINT_URL: "{{ $MLFLOW_S3_ENDPOINT_URL }}"
-        AWS_ACCESS_KEY_ID: "{{ prefect.blocks.minio-credentials.my-minio-creds.minio_root_user }}"
-        AWS_SECRET_ACCESS_KEY: "{{ prefect.blocks.minio-credentials.my-minio-creds.minio_root_password }}"
+        AWS_ACCESS_KEY_ID: "{{ prefect.blocks.aws-credentials.my-aws-creds.aws_access_key_id }}"
+        AWS_SECRET_ACCESS_KEY: "{{ prefect.blocks.aws-credentials.my-aws-creds.aws_secret_access_key }}"
+        AWS_DEFAULT_REGION: "{{ prefect.blocks.aws-credentials.my-aws-creds.region_name }}"
       networks:
         - mlops-zoomcamp-network
       auto_remove: true
