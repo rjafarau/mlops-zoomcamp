@@ -167,7 +167,8 @@
             "name": {
               "type": "string"
             }
-          }
+          },
+          "required": ["name"]
         },
         "title": "Image Pull Secrets",
         "default": [],
