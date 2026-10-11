@@ -1,8 +1,6 @@
 ## Course Project
 
-<a href="https://www.loom.com/share/8f99d25893de4fb8aaa95c0395c740b6">
-  <img src="images/thumbnail-7-1.jpg">
-</a>
+[Watch the course project video](https://www.loom.com/share/8f99d25893de4fb8aaa95c0395c740b6)
 
 ### Objective
 
@@ -21,6 +19,11 @@ For that, you will need:
 * Deploy the model in batch, web service or streaming
 * Monitor the performance of your model
 * Follow the best practices 
+
+
+## Datasets you cannot use
+
+The NYC taxi dataset is used throughout the course modules and homework. It cannot be used for the project. Pick any other dataset.
 
 
 ## Technologies 
@@ -98,7 +101,7 @@ Refer to the provided [datasets](https://github.com/DataTalksClub/data-engineeri
 
 Explore a collection of projects completed by members of our community. The projects cover a wide range of topics and utilize different tools and techniques. Feel free to delve into any project and see how others have tackled real-world problems with data, structured their code, and presented their findings. It's a great resource to learn and get ideas for your own projects.
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://datatalksclub-projects.streamlit.app/)
+<!-- The external Streamlit badge was removed during the visual audit because it was a decorative UI badge, not instructional content. -->
 
 ### MLOps Zoomcamp 2023
 
@@ -107,5 +110,3 @@ Explore a collection of projects completed by members of our community. The proj
 ### MLOps Zoomcamp 2022
 
 * [2022 Projects](../cohorts/2022/07-project)
-
-

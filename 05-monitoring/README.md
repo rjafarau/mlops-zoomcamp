@@ -1,156 +1,68 @@
-# 5. Model Monitoring
+# Module 5: Model Monitoring
 
-## 5.1 Intro to ML monitoring
+We define production monitoring metrics and calculate Evidently results. We store them in PostgreSQL, then expose them through Grafana dashboards and debugging reports.
 
-<a href="https://www.youtube.com/watch?v=SQ0jBwd_3kk&list=PL3MmuxUbc_hIUISrluw_A7wDSmfOhErJK">
-  <img src="https://markdown-videos-api.jorgenkh.no/youtube/SQ0jBwd_3kk">
-</a>
+## 5.1 [Intro to ML Monitoring](01-ml-monitoring.md)
 
+Separate service health, model performance, data quality, and drift indicators.
 
+## 5.2 [Environment Setup](02-monitoring-environment.md)
 
-## 5.2 Environment setup
+Create the Python and Docker Compose environment for metric calculation, PostgreSQL, Adminer, and Grafana.
 
-<a href="https://www.youtube.com/watch?v=yixA3C1xSxc&list=PL3MmuxUbc_hIUISrluw_A7wDSmfOhErJK">
-  <img src="https://markdown-videos-api.jorgenkh.no/youtube/yixA3C1xSxc">
-</a>
+## 5.3 [Prepare Reference and Model](03-reference-model.md)
 
+Train a baseline model and save the reference dataset used for later comparisons.
 
+## 5.4 [Evidently Metrics Calculation](04-evidently-metrics.md)
 
-## 5.3 Prepare reference and model
+Compare reference and current batches, then persist selected metrics for time-series monitoring.
 
-<a href="https://www.youtube.com/watch?v=IjNrkqMYQeQ&list=PL3MmuxUbc_hIUISrluw_A7wDSmfOhErJK">
-  <img src="https://markdown-videos-api.jorgenkh.no/youtube/IjNrkqMYQeQ">
-</a>
+## 5.5 [Evidently Monitoring Dashboard](05-evidently-dashboard.md)
 
+Create a workspace for reports and model/data behavior.
 
+## 5.6 [Dummy Monitoring](06-dummy-monitoring.md)
 
-## 5.4 Evidently metrics calculation
+Test the database and dashboard path with repeatable synthetic values before adding model metrics.
 
-<a href="https://www.youtube.com/watch?v=kP3lzh_HfWY&list=PL3MmuxUbc_hIUISrluw_A7wDSmfOhErJK">
-  <img src="https://markdown-videos-api.jorgenkh.no/youtube/kP3lzh_HfWY">
-</a>
+## 5.7 [Data Quality Monitoring](07-data-quality.md)
 
+Add data-quality checks, schedule metric calculations, and choose thresholds with model owners.
 
-## 5.5 Evidently Monitoring Dashboard
+## 5.8 [Save Grafana Dashboard](08-save-grafana-dashboard.md)
 
-<a href="https://www.youtube.com/watch?v=zjvYhDPzFlY&list=PL3MmuxUbc_hIUISrluw_A7wDSmfOhErJK">
-  <img src="https://markdown-videos-api.jorgenkh.no/youtube/zjvYhDPzFlY">
-</a>
+Provision a saved Grafana dashboard from versioned JSON and configuration files.
 
+## 5.9 [Debugging with Test Suites and Reports](09-debugging-tests-reports.md)
 
-## 5.6 Dummy monitoring
+Use Evidently reports and test suites to investigate a monitoring metric.
 
-<a href="https://www.youtube.com/watch?v=s3G4PMsOMOA&list=PL3MmuxUbc_hIUISrluw_A7wDSmfOhErJK">
-  <img src="https://markdown-videos-api.jorgenkh.no/youtube/s3G4PMsOMOA">
-</a>
+## 5.10 [Monitoring Example](10-monitoring-example.md)
 
-
-
-## 5.7 Data quality monitoring
-
-<a href="https://www.youtube.com/watch?v=fytrmPbcLhI&list=PL3MmuxUbc_hIUISrluw_A7wDSmfOhErJK">
-  <img src="https://markdown-videos-api.jorgenkh.no/youtube/fytrmPbcLhI">
-</a>
-
-> Note: in this video we use Prefect (07:33-11:21). Feel free to skip this part. Also note that Prefect
-is not officially supported in the 2024 edition of the course.
-
-
-## 5.8 Save Grafana Dashboard
-
-<a href="https://www.youtube.com/watch?v=-c4iumyZMyw&list=PL3MmuxUbc_hIUISrluw_A7wDSmfOhErJK">
-  <img src="https://markdown-videos-api.jorgenkh.no/youtube/-c4iumyZMyw">
-</a>
-
-
-
-## 5.9 Debugging with test suites and reports
-
-<a href="https://www.youtube.com/watch?v=sNSk3ojISh8&list=PL3MmuxUbc_hIUISrluw_A7wDSmfOhErJK">
-  <img src="https://markdown-videos-api.jorgenkh.no/youtube/sNSk3ojISh8">
-</a>
-
+Run the local end-to-end monitoring stack with Docker Compose, PostgreSQL, and Grafana.
 
 ## Homework
 
+More information is available in the [Module 5 homework](https://github.com/DataTalksClub/mlops-zoomcamp/blob/main/cohorts/2025/05-monitoring/homework.md).
 
-More information [here](../cohorts/2025/05-monitoring/homework.md)
+## Code and resources
 
+The current requirements set Evidently to 0.6.7. Compare this code with the [Evidently 0.7 example](post-evidently-0.7) when updating the API.
 
-## Notes
+- [Monitoring services](docker-compose.yml)
+- [Metric calculation](evidently_metrics_calculation.py)
+- [Dummy metric calculation](dummy_metrics_calculation.py)
+- [Baseline model notebook](baseline_model_nyc_taxi_data.ipynb)
+- [Debugging notebook](debugging_nyc_taxi_data.ipynb)
 
-Did you take notes? Add them here:
+## Community Notes
+
+Share community notes and resources below.
 
 * [Week 5 notes by M. Ayoub C.](https://gist.github.com/Qfl3x/aa6b1bec35fb645ded0371c46e8aafd1)
-* [week 5: Monitoring notes Ayoub.B](https://github.com/ayoub-berdeddouch/mlops-journey/blob/main/monitoring-05.md)
-* [Week 5: 2023](https://github.com/dimzachar/mlops-zoomcamp/tree/master/notes/Week_5)
-* [Week5: Why we need to monitor models after deployment? by Hongfan (Amber)](https://github.com/Muhongfan/MLops/blob/main/05-monitoring/README.md)
-* [week-5: Detailed Notes about Monitoring, codes and homework by Muhammad Shifa](https://github.com/MuhammadShifa/mlops-zoomcamp2025/blob/main/05-monitoring/README.md)
+* [Week 5 monitoring notes by Ayoub B.](https://github.com/ayoub-berdeddouch/mlops-journey/blob/main/monitoring-05.md)
+* [Week 5 notes from 2023](https://github.com/dimzachar/mlops-zoomcamp/tree/master/notes/Week_5)
+* [Why monitor models after deployment? by Hongfan](https://github.com/Muhongfan/MLops/blob/main/05-monitoring/README.md)
+* [Week 5 detailed notes by Muhammad Shifa](https://github.com/MuhammadShifa/mlops-zoomcamp2025/blob/main/05-monitoring/README.md)
 * Send a PR, add your notes above this line
-
-
-
-# Monitoring example
-
-## Notes
-There were a massive update for Evidently since 0.7.0 version.
-
-To check working example with Evidently >= 0.7.0 go to `post-evidently-0.7` folder.
-
-## Prerequisites
-
-You need following tools installed:
-- `docker`
-- `docker-compose` (included to Docker Desktop for Mac and Docker Desktop for Windows )
-
-## Preparation
-
-Note: all actions expected to be executed in repo folder.
-
-- Create virtual environment and activate it (eg. `python -m venv venv && source ./venv/bin/activate` or `conda create -n venv python=3.11 && conda activate venv`)
-- Install required packages `pip install -r requirements.txt`
-- Run `baseline_model_nyc_taxi_data.ipynb` for downloading datasets, training model and creating reference dataset 
-
-## Monitoring Example
-
-### Starting services
-
-To start all required services, execute:
-```bash
-docker-compose up
-```
-
-It will start following services:
-- `db` - PostgreSQL, for storing metrics data
-- `adminer` - database management tool
-- `grafana` - Visual dashboarding tool 
-
-
-### Sending data
-
-To calculate evidently metrics with prefect and send them to database, execute:
-```bash
-python evidently_metrics_calculation.py
-```
-
-This script will simulate batch monitoring. Every 10 seconds it will collect data for a daily batch, calculate metrics and insert them into database. This metrics will be available in Grafana in preconfigured dashboard. 
-
-### Accsess dashboard
-
-- In your browser go to a `localhost:3000`
-The default username and password are `admin`
-
-- Then navigate to `General/Home` menu and click on `Home`.
-
-- In the folder `General` you will see `New Dashboard`. Click on it to access preconfigured dashboard.
-
-### Ad-hoc debugging
-
-Run `debugging_nyc_taxi_data.ipynb` to see how you can perform a debugging with help of Evidently `TestSuites` and `Reports`
-
-### Stopping services
-
-To stop all services, execute:
-```bash
-docker-compose down
-```
