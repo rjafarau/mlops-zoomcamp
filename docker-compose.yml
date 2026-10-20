@@ -21,6 +21,7 @@ services:
       - ./02-experiment-tracking:/app/02-experiment-tracking
       - ./03-orchestration:/app/03-orchestration
       - ./04-deployment:/app/04-deployment
+      - ./05-monitoring:/app/05-monitoring
     command: [
       "jupyter", "lab",
       "--ip", "${JUPYTER_HOST}",
@@ -205,6 +206,62 @@ services:
       PREFECT_REDIS_MESSAGING_PORT: ${PREFECT_REDIS_MESSAGING_PORT}
       PREFECT_REDIS_MESSAGING_DB: ${PREFECT_REDIS_MESSAGING_DB}
     command: prefect server services start
+
+  ### MONITORING ###
+
+  monitoring-postgres:
+    image: postgres:15.17-bookworm
+    container_name: monitoring-postgres
+    environment:
+      POSTGRES_USER: ${MONITORING_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${MONITORING_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${MONITORING_POSTGRES_DB}
+    volumes:
+      - ./docker/monitoring/postgres/data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${MONITORING_POSTGRES_USER} -d ${MONITORING_POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  monitoring-adminer:
+    image: adminer:6.1.2-standalone
+    container_name: monitoring-adminer
+    depends_on:
+      monitoring-postgres:
+        condition: service_healthy
+    environment:
+      ADMINER_DEFAULT_SERVER: ${MONITORING_ADMINER_DEFAULT_SERVER}
+    ports:
+      - "127.0.0.1:${MONITORING_ADMINER_PORT}:${MONITORING_ADMINER_PORT}"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${MONITORING_ADMINER_PORT}/"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  monitoring-grafana:
+    image: grafana/grafana-enterprise:13.0.11
+    container_name: monitoring-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${MONITORING_GF_SECURITY_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${MONITORING_GF_SECURITY_ADMIN_PASSWORD}
+      GF_SERVER_HTTP_ADDR: ${MONITORING_GF_SERVER_HTTP_ADDR}
+      GF_SERVER_HTTP_PORT: ${MONITORING_GF_SERVER_HTTP_PORT}
+      GF_ANALYTICS_REPORTING_ENABLED: ${MONITORING_GF_ANALYTICS_REPORTING_ENABLED}
+    ports:
+      - "127.0.0.1:${MONITORING_GF_SERVER_HTTP_PORT}:${MONITORING_GF_SERVER_HTTP_PORT}"
+    volumes:
+      - ./docker/monitoring/grafana/data:/var/lib/grafana
+      - ./05-monitoring/config/grafana_datasources.yaml:/etc/grafana/provisioning/datasources/datasource.yaml:ro
+      - ./05-monitoring/config/grafana_dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+      - ./05-monitoring/dashboards:/opt/grafana/dashboards
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:${MONITORING_GF_SERVER_HTTP_PORT}/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   # prefect-worker:
   #   image: prefecthq/prefect:3.8.8-python3.14
