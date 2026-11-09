@@ -9,7 +9,7 @@ services:
     container_name: jupyter-lab
     environment:
       MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI}
-      MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL}
+      MLFLOW_S3_ENDPOINT_URL: ${AWS_ENDPOINT_URL_S3}
       PREFECT_API_URL: ${PREFECT_API_URL}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
@@ -29,6 +29,61 @@ services:
       "--no-browser"
     ]
 
+  ### RUSTFS ###
+
+  rustfs-server:
+    image: rustfs/rustfs:1.0.1
+    container_name: rustfs-server
+    environment:
+      RUSTFS_ADDRESS: ${RUSTFS_HOST}:${RUSTFS_PORT}
+      RUSTFS_REGION: ${AWS_DEFAULT_REGION}
+      RUSTFS_ACCESS_KEY: ${AWS_ACCESS_KEY_ID}
+      RUSTFS_SECRET_KEY: ${AWS_SECRET_ACCESS_KEY}
+      RUSTFS_CONSOLE_ENABLE: ${RUSTFS_CONSOLE_ENABLE}
+      RUSTFS_CONSOLE_ADDRESS: ${RUSTFS_HOST}:${RUSTFS_CONSOLE_PORT}
+    ports:
+      - "127.0.0.1:${RUSTFS_CONSOLE_PORT}:${RUSTFS_CONSOLE_PORT}"
+    volumes:
+      - ./docker/rustfs/server/data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", 'curl -s http://127.0.0.1:${RUSTFS_PORT}/health | grep -q ''"status":"ok"''']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  rustfs-create-buckets:
+    image: amazon/aws-cli:2.37.11
+    container_name: rustfs-create-buckets
+    depends_on:
+      rustfs-server:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      AWS_ENDPOINT_URL_S3: ${AWS_ENDPOINT_URL_S3}
+      AWS_S3_ADDRESSING_STYLE: path
+      BUCKETS: ${MLFLOW_BUCKET} ${EVIDENTLY_BUCKET}
+    entrypoint: /bin/sh
+    command:
+      - "-c"
+      - |
+        set -e
+        echo "Waiting for S3 gateway getting ready..."
+        for bucket in $$BUCKETS
+        do
+          if aws s3api head-bucket --bucket $$bucket 2>/dev/null
+          then
+            echo "Bucket $$bucket already exists. Skipping creation."
+          else
+            echo "Creating bucket $$bucket..."
+            aws s3api create-bucket --bucket $$bucket
+          fi
+        done
+    restart: "no"
+
   ### MLFLOW ###
 
   mlflow-postgres:
@@ -46,63 +101,15 @@ services:
       timeout: 3s
       retries: 10
 
-  mlflow-rustfs:
-    image: rustfs/rustfs:1.0.1
-    container_name: mlflow-rustfs
-    environment:
-      RUSTFS_ADDRESS: ${MLFLOW_RUSTFS_HOST}:${MLFLOW_RUSTFS_PORT}
-      RUSTFS_REGION: ${AWS_DEFAULT_REGION}
-      RUSTFS_ACCESS_KEY: ${AWS_ACCESS_KEY_ID}
-      RUSTFS_SECRET_KEY: ${AWS_SECRET_ACCESS_KEY}
-      RUSTFS_CONSOLE_ENABLE: ${MLFLOW_RUSTFS_CONSOLE_ENABLE}
-      RUSTFS_CONSOLE_ADDRESS: ${MLFLOW_RUSTFS_HOST}:${MLFLOW_RUSTFS_CONSOLE_PORT}
-    ports:
-      - "127.0.0.1:${MLFLOW_RUSTFS_CONSOLE_PORT}:${MLFLOW_RUSTFS_CONSOLE_PORT}"
-    volumes:
-      - ./docker/mlflow/rustfs/data:/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", 'curl -s http://127.0.0.1:${MLFLOW_RUSTFS_PORT}/health | grep -q ''"status":"ok"''']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  mlflow-create-bucket:
-    image: amazon/aws-cli:2.37.11
-    container_name: mlflow-create-bucket
-    depends_on:
-      mlflow-rustfs:
-        condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-        set -e;
-        echo 'Waiting for S3 gateway getting ready...';
-        if aws --endpoint-url=${MLFLOW_S3_ENDPOINT_URL} s3api head-bucket --bucket ${MLFLOW_RUSTFS_BUCKET} 2>/dev/null; then
-          echo 'Bucket ${MLFLOW_RUSTFS_BUCKET} already exists. Skipping creation.';
-        else
-          echo 'Creating bucket ${MLFLOW_RUSTFS_BUCKET}...';
-          aws --endpoint-url=${MLFLOW_S3_ENDPOINT_URL} s3api create-bucket --bucket ${MLFLOW_RUSTFS_BUCKET} --region ${AWS_DEFAULT_REGION};
-        fi
-      "
-    environment:
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
-      AWS_S3_ADDRESSING_STYLE: path
-      MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL}
-      MLFLOW_RUSTFS_BUCKET: ${MLFLOW_RUSTFS_BUCKET}
-    restart: "no"
-
   mlflow-server:
     image: ghcr.io/mlflow/mlflow:v3.14.0-full
     container_name: mlflow-server
     depends_on:
       mlflow-postgres:
         condition: service_healthy
-      mlflow-rustfs:
+      rustfs-server:
         condition: service_healthy
-      mlflow-create-bucket:
+      rustfs-create-buckets:
         condition: service_completed_successfully
     environment:
       # Backend store URI built from vars
@@ -111,7 +118,7 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
-      MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL}
+      MLFLOW_S3_ENDPOINT_URL: ${AWS_ENDPOINT_URL_S3}
       MLFLOW_ARTIFACTS_DESTINATION: ${MLFLOW_ARTIFACTS_DESTINATION}
       MLFLOW_S3_IGNORE_TLS: "true"
       # Server host/port
@@ -283,13 +290,13 @@ services:
   #   depends_on:
   #   #   mlflow-server:
   #   #     condition: service_healthy
-  #     mlflow-rustfs:
+  #     rustfs-server:
   #       condition: service_healthy
   #   environment:
   #     RUN_ID: 7e1c7ff453944da98f670500f11d3bc4
   #     MODEL_ID: m-205aad2b19454838af2cfe5644624f7e
   #     MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI}
-  #     MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL}
+  #     MLFLOW_S3_ENDPOINT_URL: ${AWS_ENDPOINT_URL_S3}
   #     AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
   #     AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
   #     AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
@@ -302,12 +309,12 @@ services:
   #     context: ./04-deployment/batch
   #   container_name: batch
   #   depends_on:
-  #     mlflow-rustfs:
+  #     rustfs-server:
   #       condition: service_healthy
   #   environment:
   #     PREFECT_API_URL: ${PREFECT_API_URL}
   #     MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI}
-  #     MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL}
+  #     MLFLOW_S3_ENDPOINT_URL: ${AWS_ENDPOINT_URL_S3}
   #     AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
   #     AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
   #     AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
