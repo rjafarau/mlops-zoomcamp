@@ -214,6 +214,36 @@ services:
       PREFECT_REDIS_MESSAGING_DB: ${PREFECT_REDIS_MESSAGING_DB}
     command: prefect server services start
 
+  ### EVIDENTLY ###
+
+  evidently-server:
+    build:
+      context: ./docker/evidently
+    container_name: evidently-server
+    depends_on:
+      rustfs-server:
+        condition: service_healthy
+      rustfs-create-buckets:
+        condition: service_completed_successfully
+    environment:
+      FSSPEC_S3_KEY: ${AWS_ACCESS_KEY_ID}
+      FSSPEC_S3_SECRET: ${AWS_SECRET_ACCESS_KEY}
+      FSSPEC_S3_ENDPOINT_URL: ${AWS_ENDPOINT_URL_S3}
+    ports:
+      - "127.0.0.1:${EVIDENTLY_PORT}:${EVIDENTLY_PORT}"
+    command: [
+      "evidently", "ui",
+      "--host", "${EVIDENTLY_HOST}",
+      "--port", "${EVIDENTLY_PORT}",
+      "--workspace", "s3://${EVIDENTLY_BUCKET}/workspace"
+    ]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:${EVIDENTLY_PORT}/api/version', timeout=1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   ### MONITORING ###
 
   monitoring-postgres:
