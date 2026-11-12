@@ -334,6 +334,27 @@ services:
   #     - "127.0.0.1:9696:9696"
   #   restart: on-failure
 
+  # web-server-mlflow-fastapi:
+  #   build:
+  #     context: ./04-deployment/web-service-mlflow-fastapi
+  #   container_name: web-server-mlflow-fastapi
+  #   depends_on:
+  #     # mlflow-server:
+  #     #   condition: service_healthy
+  #     rustfs-server:
+  #       condition: service_healthy
+  #   environment:
+  #     RUN_ID: b5a5e81671ef4d7f9a411e9211c25ec3
+  #     MODEL_ID: m-9c9b756c84da4c8c84377a82b82c9796
+  #     MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI}
+  #     MLFLOW_S3_ENDPOINT_URL: ${AWS_ENDPOINT_URL_S3}
+  #     AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+  #     AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+  #     AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+  #   ports:
+  #     - "127.0.0.1:8000:8000"
+  #   restart: on-failure
+
   # batch:
   #   build:
   #     context: ./04-deployment/batch
