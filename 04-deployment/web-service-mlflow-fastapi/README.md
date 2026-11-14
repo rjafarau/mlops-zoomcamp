@@ -1,0 +1,35 @@
+## Getting the model for deployment from MLflow
+
+* Take the code from the previous video
+* Train another model, register with MLflow
+* Put the model into a scikit-learn pipeline
+* Model deployment with tracking server
+* Model deployment without the tracking server
+
+Starting the MLflow server with S3:
+
+```bash
+mlflow server \
+    --backend-store-uri=sqlite:///mlflow.db \
+    --default-artifact-root=s3://mlflow-models-alexey/
+```
+
+Downloading the artifact:
+
+```bash
+export MLFLOW_TRACKING_URI="http://127.0.0.1:5000"
+export MODEL_RUN_ID="b5a5e81671ef4d7f9a411e9211c25ec3"
+
+mlflow artifacts download \
+    --run-id ${MODEL_RUN_ID} \
+    --artifact-path model \
+    --dst-path .
+```
+
+Test endpoint using `curl`:
+
+```bash
+curl -X POST http://localhost:8000/predict \
+     -H "Content-Type: application/json" \
+     -d '{"PULocationID": 10, "DOLocationID": 50, "trip_distance": 40}'
+```

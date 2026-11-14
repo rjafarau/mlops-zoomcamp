@@ -49,4 +49,4 @@ WORKDIR /app
 EXPOSE 9696
 
 # Run the app
-ENTRYPOINT [ "gunicorn", "--bind", "0.0.0.0:9696", "src.app:app" ]
+CMD [ "gunicorn", "--bind", "0.0.0.0:9696", "src.app:app" ]
