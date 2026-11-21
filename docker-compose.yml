@@ -291,13 +291,16 @@ services:
       GF_SERVER_HTTP_ADDR: ${MONITORING_GF_SERVER_HTTP_ADDR}
       GF_SERVER_HTTP_PORT: ${MONITORING_GF_SERVER_HTTP_PORT}
       GF_ANALYTICS_REPORTING_ENABLED: ${MONITORING_GF_ANALYTICS_REPORTING_ENABLED}
+      MONITORING_POSTGRES_USER: ${MONITORING_POSTGRES_USER}
+      MONITORING_POSTGRES_PASSWORD: ${MONITORING_POSTGRES_PASSWORD}
+      MONITORING_POSTGRES_DB: ${MONITORING_POSTGRES_DB}
+      MONITORING_POSTGRES_PORT: ${MONITORING_POSTGRES_PORT}
     ports:
       - "127.0.0.1:${MONITORING_GF_SERVER_HTTP_PORT}:${MONITORING_GF_SERVER_HTTP_PORT}"
     volumes:
       - ./docker/monitoring/grafana/data:/var/lib/grafana
-      - ./05-monitoring/config/grafana_datasources.yaml:/etc/grafana/provisioning/datasources/datasource.yaml:ro
-      - ./05-monitoring/config/grafana_dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
-      - ./05-monitoring/dashboards:/opt/grafana/dashboards
+      - ./05-monitoring/config/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./05-monitoring/config/dashboards:/etc/grafana/provisioning/dashboards:ro
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:${MONITORING_GF_SERVER_HTTP_PORT}/api/health || exit 1"]
       interval: 10s

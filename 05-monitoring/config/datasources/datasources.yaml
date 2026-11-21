@@ -1,0 +1,18 @@
+apiVersion: 1
+
+datasources:
+  - name: monitoring-postgres
+    type: postgres
+    url: monitoring-postgres:$__env{MONITORING_POSTGRES_PORT}
+    user: $__env{MONITORING_POSTGRES_USER}
+    secureJsonData:
+      password: $__env{MONITORING_POSTGRES_PASSWORD}
+    jsonData:
+      database: $__env{MONITORING_POSTGRES_DB}
+      sslmode: disable
+      maxOpenConns: 100
+      maxIdleConns: 100
+      maxIdleConnsAuto: true
+      connMaxLifetime: 14400
+      postgresVersion: 1800
+      timescaledb: false
